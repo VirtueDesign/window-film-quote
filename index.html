@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Wrapcraft — Window Film Price Calculator</title>
+<title>Wrapcraft — Site Estimate</title>
 
 <!-- ── EXACT BRAND FONTS from wrapcraft.co.uk ── -->
 <link href="https://fonts.googleapis.com/css?family=Allerta:400,700,400italic,700italic%7CPlus+Jakarta+Sans:200,800,200italic,800italic" rel="stylesheet" type="text/css">
@@ -173,7 +173,7 @@ footer { background: var(--charcoal); padding: 30px 0; }
 </head>
 <body>
 
-<div class="band">Wrapcraft · Window Film Price Calculator · Supply &amp; Install</div>
+<div class="band">Wrapcraft · Site Estimate · Supply &amp; Install</div>
 
 <nav>
   <a href="#quoteBuilder" class="logo"><span class="logo-fb">Wrap<em>craft</em></span></a>
@@ -186,7 +186,7 @@ footer { background: var(--charcoal); padding: 30px 0; }
 <!-- ══ WRAPCRAFT IDENTITY ══ -->
 <div style="background:var(--charcoal);padding:32px 0 28px;text-align:center;border-bottom:3px solid var(--teal);">
   <div style="font-family:var(--fhead);font-size:10px;font-weight:800;letter-spacing:3px;text-transform:uppercase;color:var(--taupe);margin-bottom:10px;">Window Film · Supply &amp; Install</div>
-  <div style="font-family:var(--fhead);font-weight:800;font-size:clamp(22px,3vw,30px);color:var(--white);letter-spacing:-0.3px;">Instant Job Pricing</div>
+  <div style="font-family:var(--fhead);font-weight:800;font-size:clamp(22px,3vw,30px);color:var(--white);letter-spacing:-0.3px;">Site Estimate</div>
   <div style="font-family:var(--fbody);font-size:13px;color:rgba(255,255,255,.5);margin-top:8px;">Vion Silver Premium 20 &amp; 3M Prestige · Internal &amp; External</div>
 </div>
 
@@ -247,7 +247,7 @@ footer { background: var(--charcoal); padding: 30px 0; }
         vion:{ internal:{priceLM:10.25, widthMM:1828}, external:{priceLM:35, widthMM:1826} },
         threeM:{ internal:{priceLM:133.73, widthMM:1829}, external:{priceLM:183.32, widthMM:1839} }
       },
-      hourlyRate:50, hoursBase:1, hoursLarge:2, widthThresholdMM:1000, materialMarkupPct:20, marginPct:15, minCharge:0, vatEnabled:false, vatPct:20
+      hourlyRate:50, hoursBase:1, hoursLarge:2, widthThresholdMM:1000, tallSurcharge:50, tallThresholdMM:1300, materialMarkupPct:20, marginPct:20, minCharge:0, vatEnabled:false, vatPct:20
     },
     optionWindows:{ vion_internal:[], vion_external:[], threeM_internal:[], threeM_external:[] },
     materialPhotos:{
@@ -269,13 +269,13 @@ footer { background: var(--charcoal); padding: 30px 0; }
   const filmOptionsMeta = [
     { key:'vion', app:'internal',
       badge:'VION', badgeBg:'var(--teal)', badgeColor:'#fff',
-      title:'Silver Premium 20', sub:'10 YEAR DURABILITY',
-      desc:'Premium architectural window film for internal glazing, backed by a 10-year manufacturer durability rating.',
+      title:'Silver Premium 20', sub:'7–10 YEAR DURABILITY',
+desc:'Premium architectural window film for internal glazing, backed by a 7 to 10-year manufacturer durability rating.',
       fallbackBg:'linear-gradient(135deg,#cfd4d6 0%,#e9ecee 40%,#b9c0c4 70%,#d6dadc 100%)', fallbackColor:'rgba(0,0,0,0.35)' },
     { key:'vion', app:'external',
       badge:'VION', badgeBg:'var(--teal)', badgeColor:'#fff',
-      title:'Silver Premium 20', sub:'10 YEAR DURABILITY',
-      desc:'Exterior-grade version of the same film, built to withstand outdoor exposure with a 10-year manufacturer durability rating.',
+      title:'Silver Premium 20', sub:'7–10 YEAR DURABILITY',
+desc:'Exterior-grade version of the same film, built to withstand outdoor exposure with a 7 to 10-year manufacturer durability rating.',
       fallbackBg:'linear-gradient(135deg,#b9c0c4 0%,#d6dadc 40%,#9aa3a8 70%,#c2c9cc 100%)', fallbackColor:'rgba(0,0,0,0.4)' },
     { key:'threeM', app:'internal',
       badge:'3M', badgeBg:'#1a1a1a', badgeColor:'#fff',
@@ -412,7 +412,10 @@ footer { background: var(--charcoal); padding: 30px 0; }
     const hours = hasValidSize ? hoursForPanel(r.widthMM, r.heightMM) : 0;
     const hourlyRate = parseFloat(state.settings.hourlyRate) || 0;
     const installCost = hours * hourlyRate * qty;
-    return { area, lm, hours, materialRaw, materialCost, installCost, rowTotal: materialCost + installCost };
+    const tallThreshold = parseFloat(state.settings.tallThresholdMM) || 0;
+    const tallH = Math.max(parseFloat(r.widthMM)||0, parseFloat(r.heightMM)||0);
+    const tallSurcharge = hasValidSize && tallH > tallThreshold ? (parseFloat(state.settings.tallSurcharge)||0) * qty : 0;
+    return { area, lm, hours, materialRaw, materialCost, installCost, tallSurcharge, rowTotal: materialCost + installCost + tallSurcharge };
   }
 
   function mwinRowTemplate(ok, r){
@@ -511,12 +514,12 @@ footer { background: var(--charcoal); padding: 30px 0; }
 
   // ---------------- Totals / summary (per option) ----------------
   function computeOptionTotals(ok){
-    let totalArea = 0, totalMaterialRaw = 0, totalMaterial = 0, totalInstall = 0;
+    let totalArea = 0, totalMaterialRaw = 0, totalMaterial = 0, totalInstall = 0, totalTallSurcharge = 0;
     (state.optionWindows[ok]||[]).forEach(r => {
       const c = rowCostsForOption(ok, r);
-      totalArea += c.area; totalMaterialRaw += c.materialRaw; totalMaterial += c.materialCost; totalInstall += c.installCost;
+      totalArea += c.area; totalMaterialRaw += c.materialRaw; totalMaterial += c.materialCost; totalInstall += c.installCost; totalTallSurcharge += c.tallSurcharge;
     });
-    const subtotal = totalMaterial + totalInstall;
+    const subtotal = totalMaterial + totalInstall + totalTallSurcharge;
     const min = parseFloat(state.settings.minCharge) || 0;
     const minApplied = subtotal > 0 && subtotal < min;
     const chargeable = minApplied ? min : subtotal;
@@ -526,7 +529,7 @@ footer { background: var(--charcoal); padding: 30px 0; }
     const vatPct = parseFloat(state.settings.vatPct) || 0;
     const vatAmount = state.settings.vatEnabled ? marked * vatPct / 100 : 0;
     const grandTotal = marked + vatAmount;
-    return { totalArea, totalMaterialRaw, totalMaterial, totalInstall, subtotal, minApplied, chargeable, marginPct, marginAmount, marked, vatAmount, grandTotal, vatPct };
+    return { totalArea, totalMaterialRaw, totalMaterial, totalInstall, totalTallSurcharge, subtotal, minApplied, chargeable, marginPct, marginAmount, marked, vatAmount, grandTotal, vatPct };
   }
 
   function updateOptionSummary(ok){
