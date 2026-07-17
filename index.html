@@ -573,7 +573,8 @@ desc:'Exterior-grade version of the same film, built to withstand outdoor exposu
     const jobDate = escapeHtml(document.getElementById('jobDate').value || '');
     const rows = (state.optionWindows[ok]||[]).map(r => {
       const c = rowCostsForOption(ok, r);
-      return `<tr><td>${escapeHtml(r.label)}</td><td>${r.widthMM||0}×${r.heightMM||0}mm</td><td>${r.qty||0}</td><td>${fmtArea(c.area)}</td><td>${fmtMoney(c.rowTotal)}</td></tr>`;
+      const rowPrice = Math.round(c.rowTotal * (1 + t.marginPct/100));
+    return `<tr><td>${escapeHtml(r.label)}</td><td>${r.widthMM||0}×${r.heightMM||0}mm</td><td>${r.qty||0}</td><td>${fmtArea(c.area)}</td><td>${fmtMoney(rowPrice)}</td></tr>`;
     }).join('');
 
     document.getElementById('printView').innerHTML = `
