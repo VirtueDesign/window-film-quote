@@ -247,7 +247,7 @@ footer { background: var(--charcoal); padding: 30px 0; }
         vion:{ internal:{priceLM:10.25, widthMM:1828}, external:{priceLM:35, widthMM:1826} },
         threeM:{ internal:{priceLM:133.73, widthMM:1829}, external:{priceLM:183.32, widthMM:1839} }
       },
-      hourlyRate:50, hoursBase:1, hoursLarge:2, widthThresholdMM:1000, tallSurcharge:50, tallThresholdMM:1300, materialMarkupPct:20, marginPct:20, minCharge:0, vatEnabled:false, vatPct:20
+      hourlyRate:50, hoursBase:1, hoursLarge:2, widthThresholdMM:1000, tallSurcharge:50, tallThresholdMM:1300, materialMarkupPct:20, marginPct:20, minCharge:0, vatEnabled:true, vatPct:20
     },
     optionWindows:{ vion_internal:[], vion_external:[], threeM_internal:[], threeM_external:[] },
     materialPhotos:{
@@ -330,8 +330,10 @@ desc:'Exterior-grade version of the same film, built to withstand outdoor exposu
             <div class="mini-summary">
               <div class="mini-summary-figures">
                 <div class="mini-figure"><div class="lbl">Total Area</div><div class="val" id="moptArea-${ok}">0.00 m²</div></div>
-                <div class="mini-figure total"><div class="lbl">Total — Supply &amp; Install</div><div class="val" id="moptTotal-${ok}">£0.00</div></div>
-                <div class="mini-figure"><div class="lbl">Per m²</div><div class="val" id="moptRate-${ok}" style="font-size:14px;">—</div></div>
+                <div class="mini-figure"><div class="lbl">Exc. VAT</div><div class="val" id="moptExVat-${ok}">£0.00</div></div>
+                <div class="mini-figure"><div class="lbl">VAT (20%)</div><div class="val" id="moptVat-${ok}">£0.00</div></div>
+                <div class="mini-figure total"><div class="lbl">Total Inc. VAT</div><div class="val" id="moptTotal-${ok}">£0.00</div></div>
+                <div class="mini-figure"><div class="lbl">Per m² exc. VAT</div><div class="val" id="moptRate-${ok}" style="font-size:14px;">—</div></div>
               </div>
               <div class="mini-actions">
                 <button type="button" class="btn btn-ghost-dark btn-sm pdf-mwin-btn" data-opt="${ok}">Download PDF</button>
@@ -535,11 +537,15 @@ desc:'Exterior-grade version of the same film, built to withstand outdoor exposu
   function updateOptionSummary(ok){
     const t = computeOptionTotals(ok);
     const areaEl = document.getElementById('moptArea-' + ok);
+    const exVatEl = document.getElementById('moptExVat-' + ok);
+    const vatEl = document.getElementById('moptVat-' + ok);
     const totalEl = document.getElementById('moptTotal-' + ok);
     const rateEl = document.getElementById('moptRate-' + ok);
     if(areaEl) areaEl.textContent = fmtArea(t.totalArea);
+    if(exVatEl) exVatEl.textContent = fmtMoney(Math.round(t.marked));
+    if(vatEl) vatEl.textContent = fmtMoney(Math.round(t.vatAmount));
     if(totalEl) totalEl.textContent = fmtMoney(Math.round(t.grandTotal));
-    if(rateEl) rateEl.textContent = t.totalArea > 0 ? fmtMoney(Math.round(t.grandTotal / t.totalArea)) + '/m²' : '—';
+    if(rateEl) rateEl.textContent = t.totalArea > 0 ? fmtMoney(Math.round(t.marked / t.totalArea)) + '/m²' : '—';
     return t;
   }
 
@@ -582,8 +588,9 @@ desc:'Exterior-grade version of the same film, built to withstand outdoor exposu
       <div class="ptotals">
         <div class="pline"><span>Total area</span><span>${fmtArea(t.totalArea)}</span></div>
         ${t.minApplied ? '<div class="pline"><span>Minimum job charge applied</span><span></span></div>' : ''}
-        ${state.settings.vatEnabled ? `<div class="pline"><span>VAT (${t.vatPct}%)</span><span>${fmtMoney(t.vatAmount)}</span></div>` : ''}
-        <div class="pline pgrand"><span>Total — Supply &amp; Install</span><span>${fmtMoney(Math.round(t.grandTotal))}</span></div>
+        <div class="pline"><span>Total exc. VAT</span><span>${fmtMoney(Math.round(t.marked))}</span></div>
+        <div class="pline"><span>VAT (${t.vatPct}%)</span><span>${fmtMoney(Math.round(t.vatAmount))}</span></div>
+        <div class="pline pgrand"><span>Total inc. VAT</span><span>${fmtMoney(Math.round(t.grandTotal))}</span></div>
       </div>
       <p class="disclaimer">Guide price only, supplied and installed by Wrapcraft (Virtue Design Ltd). Final price subject to site survey.</p>
     `;
