@@ -247,7 +247,7 @@ footer { background: var(--charcoal); padding: 30px 0; }
         vionEco:{ internal:{priceLM:9, widthMM:1828}, external:{priceLM:19, widthMM:1828} },
         threeM:{ internal:{priceLM:133.73, widthMM:1829}, external:{priceLM:183.32, widthMM:1839} }
       },
-      hourlyRate:50, hoursBase:1, hoursLarge:1.5, areaThresholdM2:3, tallSurcharge:50, tallThresholdMM:1300, materialMarkupPct:20, marginPct:20, minCharge:0, vatEnabled:true, vatPct:20
+      hourlyRate:50, hoursSmall:0.5, hoursBase:1, hoursLarge:1.5, smallAreaM2:0.7, areaThresholdM2:3, tallSurcharge:50, tallThresholdMM:1300, tallAreaMinM2:1, marginTierLow:5, marginTierMid:10, marginTierHigh:20, marginTierLowMax:200, marginTierMidMax:400, materialMarkupPct:20, minCharge:0, vatEnabled:true, vatPct:20
     },
     optionWindows:{ vion_internal:[], vion_external:[], vionEco_internal:[], vionEco_external:[], threeM_internal:[], threeM_external:[] },
     materialPhotos:{
@@ -406,8 +406,11 @@ desc:'Exterior-grade version of the same film, built to withstand outdoor exposu
     const w = parseFloat(widthMM) || 0;
     const h = parseFloat(heightMM) || 0;
     const areaMsq = (w / 1000) * (h / 1000);
-    const threshold = parseFloat(state.settings.areaThresholdM2) || 3;
-    return areaMsq > threshold ? (parseFloat(state.settings.hoursLarge)||0) : (parseFloat(state.settings.hoursBase)||0);
+    const smallThreshold = parseFloat(state.settings.smallAreaM2) || 0.7;
+    const largeThreshold = parseFloat(state.settings.areaThresholdM2) || 3;
+    if(areaMsq < smallThreshold) return parseFloat(state.settings.hoursSmall) || 0.5;
+    if(areaMsq > largeThreshold) return parseFloat(state.settings.hoursLarge) || 1.5;
+    return parseFloat(state.settings.hoursBase) || 1;
   }
 
   function rowCostsForOption(ok, r){
@@ -424,8 +427,10 @@ desc:'Exterior-grade version of the same film, built to withstand outdoor exposu
     const hourlyRate = parseFloat(state.settings.hourlyRate) || 0;
     const installCost = hours * hourlyRate * qty;
     const tallThreshold = parseFloat(state.settings.tallThresholdMM) || 0;
+    const tallAreaMin = parseFloat(state.settings.tallAreaMinM2) || 1;
     const tallH = Math.max(parseFloat(r.widthMM)||0, parseFloat(r.heightMM)||0);
-    const tallSurcharge = hasValidSize && tallH > tallThreshold ? (parseFloat(state.settings.tallSurcharge)||0) * qty : 0;
+    const panelArea = (parseFloat(r.widthMM)||0)/1000 * (parseFloat(r.heightMM)||0)/1000;
+    const tallSurcharge = hasValidSize && tallH > tallThreshold && panelArea >= tallAreaMin ? (parseFloat(state.settings.tallSurcharge)||0) * qty : 0;
     return { area, lm, hours, materialRaw, materialCost, installCost, tallSurcharge, rowTotal: materialCost + installCost + tallSurcharge };
   }
 
@@ -467,7 +472,12 @@ desc:'Exterior-grade version of the same film, built to withstand outdoor exposu
     const r = findOptionRow(ok, id);
     if(!r) return;
     const c = rowCostsForOption(ok, r);
-    const marginPct = parseFloat(state.settings.marginPct) || 0;
+    const _s = state.settings;
+    const marginPct = c.rowTotal <= (parseFloat(_s.marginTierLowMax)||200)
+      ? (parseFloat(_s.marginTierLow)||5)
+      : c.rowTotal <= (parseFloat(_s.marginTierMidMax)||400)
+        ? (parseFloat(_s.marginTierMid)||10)
+        : (parseFloat(_s.marginTierHigh)||20);
     const priceWithMargin = c.rowTotal * (1 + marginPct/100);
     const el = document.getElementById('mcomputed-' + ok + '-' + id);
     if(el) el.innerHTML = `Area <b>${fmtArea(c.area)}</b> · Price <b>${fmtMoney(Math.round(priceWithMargin))}</b>`;
@@ -534,7 +544,12 @@ desc:'Exterior-grade version of the same film, built to withstand outdoor exposu
     const min = parseFloat(state.settings.minCharge) || 0;
     const minApplied = subtotal > 0 && subtotal < min;
     const chargeable = minApplied ? min : subtotal;
-    const marginPct = parseFloat(state.settings.marginPct) || 0;
+    const s = state.settings;
+    const marginPct = chargeable <= (parseFloat(s.marginTierLowMax)||200)
+      ? (parseFloat(s.marginTierLow)||5)
+      : chargeable <= (parseFloat(s.marginTierMidMax)||400)
+        ? (parseFloat(s.marginTierMid)||10)
+        : (parseFloat(s.marginTierHigh)||20);
     const marginAmount = chargeable * marginPct / 100;
     const marked = chargeable + marginAmount;
     const vatPct = parseFloat(state.settings.vatPct) || 0;
